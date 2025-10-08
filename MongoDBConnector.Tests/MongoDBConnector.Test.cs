@@ -5,7 +5,6 @@ using Testcontainers.MongoDb;
 
 namespace MongoDBConnector.Tests;
 
-
 public class MongoDBConnectorTests : IAsyncLifetime
 {
     private readonly MongoDbContainer _mongoContainer;
