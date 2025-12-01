@@ -6,24 +6,28 @@ namespace MongoDBConnector;
 ///Implementing the interface on the MongoConnector 
 public class MongoDBConnector : IDBConnector
 {
-    private readonly MongoClient _client; 
+    private string m_connectionString;
 
     public MongoDBConnector (string connectionString)
     {
-        _client = new MongoClient(connectionString); 
-    }
+        m_connectionString = connectionString;   }
 
-    public bool Ping()
+    public async Task<bool> ping()
     {
         try
         {
-            var database = _client.GetDatabase("admin");
+            var client = new MongoClient(m_connectionString);
+            // Ping the database
+            var database = client.GetDatabase("admin"); // "admin" is safe to use for ping
             var command = new BsonDocument("ping", 1);
-            database.RunCommand<BsonDocument>(command);
+            var result = await database.RunCommandAsync<BsonDocument>(command);
+
+            Console.WriteLine("Ping successful: " + result.ToJson());
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine("Ping failed: " + ex.Message);
             return false;
         }
     }

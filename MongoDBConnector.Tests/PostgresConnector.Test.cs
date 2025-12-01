@@ -1,25 +1,53 @@
-using Xunit; 
+using Testcontainers.PostgreSql;
+using Xunit;
 
+namespace PostgresConnector.Test;
 
-
-namespace PostgresConnector.Tests;
-
-
-public class PostgresConnectorTest
+public class PostgresConnectorTest : IAsyncLifetime
 {
+    private readonly PostgreSqlContainer _postgresDbContainer;
 
-    [Fact]
-    public void Ping_ShouldReturnTrue_WhenMongoIsRunning()
+    public PostgresConnectorTest()
     {
-        var connector = new PostgresConnector();
-        Assert.True(connector.Ping()); 
+        _postgresDbContainer = new PostgreSqlBuilder()
+            .WithDatabase("testdb")
+            .WithCleanUp(true)
+            .Build();
+    }
+
+    public async Task InitializeAsync()
+    {
+        await _postgresDbContainer.StartAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _postgresDbContainer.DisposeAsync();
     }
 
     [Fact]
-    public void Ping_ShouldReturnFalse_WhenMongoIsNotAvailable()
+    public async Task Should_Ping_Db_Successfully()
     {
-        var connector = new PostgresConnector();
-        Assert.False(connector.Ping())
+        // Given
+        IDBConnector connector = new MongoDBConnector.PostgresConnector(_postgresDbContainer.GetConnectionString());
+
+        // When
+        bool pingResult = await connector.Ping();
+
+        // Then
+        Assert.True(pingResult);
     }
 
+    [Fact]
+    public async Task Should_Fail_With_Missing_Connection_String()
+    {
+        // Given
+        var connector = new MongoConnector.PostgresConnector("");
+
+        // When
+        bool pingResult = await connector.Ping();
+
+        // Then
+        Assert.False(pingResult);
+    }
 }
