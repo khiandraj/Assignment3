@@ -1,36 +1,34 @@
+using System;
 using Npgsql;
 
-namespace MongoDBConnector;
 
-public class PostgresConnector : IDBConnector
+namespace MongoDBConnector
 {
-    private NpgsqlConnection connection;
-
-    public PostgresConnector(string connectionString)
+    public class PostgresConnector : IDBConnector
     {
-        connection = new NpgsqlConnection(connectionString);
-    }
+        private readonly string _connectionString;
 
-    public async Task<bool> ping()
-    {
-        try
+        public PostgresConnector(string connectionString)
         {
-            await connection.OpenAsync();
-
-            await using (var cmd = new NpgsqlCommand("SELECT 1", connection))
-            {
-                var result = await cmd.ExecuteScalarAsync();
-
-                if (result == null)
-                    return false;
-
-                return (int)result == 1;
-            }
+            _connectionString = connectionString;
         }
-        catch (Exception ex)
+
+        public bool Ping()
         {
-            Console.WriteLine("Ping failed: " + ex.Message);
-            return false;
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                connection.Open();
+
+                using var cmd = new NpgsqlCommand("SELECT 1", connection);
+                var result = cmd.ExecuteScalar();
+
+                return result != null && Convert.ToInt32(result) == 1;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

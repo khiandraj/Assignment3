@@ -1,58 +1,36 @@
-﻿using Testcontainers.MongoDb;
-
+﻿using Xunit;
+using Testcontainers.MongoDb;
+using ConnectorLib = MongoDBConnector.MongoDBConnector;
 
 namespace MongoDBConnector.Tests;
 
-public class MongoDBConnectorTests : IAsyncLifetime
-{
-    private readonly MongoDbContainer _mongoContainer;
-
-    public MongoDBConnectorTests()
+    public class MongoDBConnectorTest : IAsyncLifetime
     {
-        _mongoContainer = new MongoDbBuilder()
-            .WithImage("mongo:7.0")
-            .WithCleanUp(true)
-            .Build();
+        private readonly MongoDbContainer _mongoDbContainer;
+
+        public MongoDBConnectorTest()
+        {
+            _mongoDbContainer = new MongoDbBuilder().Build();
+        }
+
+        public async Task InitializeAsync() => await _mongoDbContainer.StartAsync();
+        public async Task DisposeAsync() => await _mongoDbContainer.DisposeAsync();
+
+        [Fact]
+        public void Ping_ShouldReturnTrue_WhenMongoDBIsRunning()
+        {
+            var connector = new ConnectorLib(_mongoDbContainer.GetConnectionString());
+            Assert.True(connector.Ping());
+        }
+
+        [Fact]
+        public void Ping_ShouldReturnFalse_WhenMongoDBIsNotRunning()
+        {
+            var connector = new ConnectorLib("mongodb://invalid:27017");
+            Assert.False(connector.Ping());
+        }
     }
 
-    public async Task InitializeAsync()
-    {
-        await _mongoContainer.StartAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _mongoContainer.DisposeAsync();
-    }
-
-    [Fact]
-    public async Task should_ping_db_successfully()
-    {
-        // Given
-        IDBConnector connector = new DBConnector.MongoConnector(_mongoContainer.GetConnectionString());
-
-        // When
-        bool ping_result = await connector.ping();
-
-        // Then
-        Assert.True(ping_result);
-    }
-    
-
-    [Fact]
-    public async Task should_fail_missing_db()
-    {
-    // Given
-        var connector = new DBConnector.MongoConnector("");
-
-        // When
-        bool ping_result = await connector.ping();
-
-        // Then
-        Assert.False(ping_result);
-
-    }
-}
 
 
 

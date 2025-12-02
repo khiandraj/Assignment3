@@ -1,53 +1,33 @@
-using Testcontainers.PostgreSql;
 using Xunit;
+using Testcontainers.PostgreSql;
+using ConnectorLib = MongoDBConnector.PostgresConnector;
 
-namespace PostgresConnector.Test;
-
-public class PostgresConnectorTest : IAsyncLifetime
+namespace PostgresConnector.Tests
 {
-    private readonly PostgreSqlContainer _postgresDbContainer;
-
-    public PostgresConnectorTest()
+    public class PostgresConnectorTest : IAsyncLifetime
     {
-        _postgresDbContainer = new PostgreSqlBuilder()
-            .WithDatabase("testdb")
-            .WithCleanUp(true)
-            .Build();
-    }
+        private readonly PostgreSqlContainer _postgresContainer;
 
-    public async Task InitializeAsync()
-    {
-        await _postgresDbContainer.StartAsync();
-    }
+        public PostgresConnectorTest()
+        {
+            _postgresContainer = new PostgreSqlBuilder().Build();
+        }
 
-    public async Task DisposeAsync()
-    {
-        await _postgresDbContainer.DisposeAsync();
-    }
+        public async Task InitializeAsync() => await _postgresContainer.StartAsync();
+        public async Task DisposeAsync() => await _postgresContainer.DisposeAsync();
 
-    [Fact]
-    public async Task Should_Ping_Db_Successfully()
-    {
-        // Given
-        IDBConnector connector = new MongoDBConnector.PostgresConnector(_postgresDbContainer.GetConnectionString());
+        [Fact]
+        public void Ping_ShouldReturnTrue_WhenPostgresIsRunning()
+        {
+            var connector = new ConnectorLib(_postgresContainer.GetConnectionString());
+            Assert.True(connector.Ping());
+        }
 
-        // When
-        bool pingResult = await connector.Ping();
-
-        // Then
-        Assert.True(pingResult);
-    }
-
-    [Fact]
-    public async Task Should_Fail_With_Missing_Connection_String()
-    {
-        // Given
-        var connector = new MongoConnector.PostgresConnector("");
-
-        // When
-        bool pingResult = await connector.Ping();
-
-        // Then
-        Assert.False(pingResult);
+        [Fact]
+        public void Ping_ShouldReturnFalse_WhenPostgresIsNotRunning()
+        {
+            var connector = new ConnectorLib("Host=invalid;Username=postgres;Password=postgres;Database=test");
+            Assert.False(connector.Ping());
+        }
     }
 }
